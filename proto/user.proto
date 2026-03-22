@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package player;
+
+service PlayerService {
+  rpc CreateProfile (CreateProfileRequest) returns (CreateProfileResponse);
+  rpc GetProfile     (GetProfileRequest)     returns (GetProfileResponse);
+  rpc UpdateProfile  (UpdateProfileRequest)  returns (UpdateProfileResponse);
+  rpc GetLeaderboard (GetLeaderboardRequest) returns (GetLeaderboardResponse);
+  rpc AddScore       (AddScoreRequest)       returns (AddScoreResponse);
+  rpc GetScores      (GetScoresRequest)      returns (GetScoresResponse);
+}
+
+// ----- Profile -----
+
+message GetProfileRequest {
+  int32 auth_id = 1;
+}
+
+message GetProfileResponse {
+  int32  auth_id   = 1;
+  string username  = 2;
+  string realname  = 3;
+  string avatar    = 4;
+  int32  total_score = 5;
+  int32  rank      = 6;
+}
+
+message UpdateProfileRequest {
+  int32  auth_id  = 1;
+  string avatar   = 2;
+  string realname = 3;
+}
+
+message UpdateProfileResponse {
+  bool success = 1;
+}
+
+// ----- Score -----
+
+message AddScoreRequest {
+  int32  auth_id    = 1;
+  int32  level_id   = 2;
+  int32  score      = 3;
+  int32  time_spent = 4;  // seconds
+  string level_name = 5;
+}
+
+message AddScoreResponse {
+  bool  success     = 1;
+  int32 total_score = 2;
+}
+
+message GetScoresRequest {
+  int32 auth_id = 1;
+}
+
+message ScoreEntry {
+  int32  level_id      = 1;
+  string level_name    = 2;
+  int32  score         = 3;
+  int32  time_spent    = 4;
+  string completed_at  = 5;  // ISO8601
+}
+
+message GetScoresResponse {
+  repeated ScoreEntry scores = 1;
+}
+
+// ----- Leaderboard -----
+
+message GetLeaderboardRequest {
+  int32 limit  = 1;  // default 10
+  int32 offset = 2;
+}
+
+message LeaderboardEntry {
+  int32  rank        = 1;
+  int32  auth_id     = 2;
+  string username    = 3;
+  string avatar      = 4;
+  int32  total_score = 5;
+}
+
+message GetLeaderboardResponse {
+  repeated LeaderboardEntry entries = 1;
+  int32 total = 2;
+}
+
+message CreateProfileRequest {
+  int32  auth_id  = 1;
+  string username = 2;
+  string email    = 3;
+  string realname = 4;
+}
+
+message CreateProfileResponse {
+  bool success = 1;
+}

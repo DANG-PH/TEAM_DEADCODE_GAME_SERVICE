@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package game;
+
+service GameService {
+  // Level
+  rpc GetLevels       (GetLevelsRequest)       returns (GetLevelsResponse);
+  rpc GetLevelDetail  (GetLevelDetailRequest)  returns (GetLevelDetailResponse);
+
+  // Challenge
+  rpc GetChallenge    (GetChallengeRequest)    returns (GetChallengeResponse);
+  rpc GetHint         (GetHintRequest)         returns (GetHintResponse);
+  rpc SubmitAnswer    (SubmitAnswerRequest)     returns (SubmitAnswerResponse);
+
+  // Progress
+  rpc GetProgress     (GetProgressRequest)     returns (GetProgressResponse);
+  rpc StartLevel      (StartLevelRequest)      returns (StartLevelResponse);
+  rpc CompleteLevel   (CompleteLevelRequest)   returns (CompleteLevelResponse);
+
+  // Code execution
+  rpc RunCode         (RunCodeRequest)         returns (RunCodeResponse);
+  rpc ValidateCode    (ValidateCodeRequest)    returns (ValidateCodeResponse);
+
+  // Admin
+  rpc AdminCreateLevel     (AdminCreateLevelRequest)     returns (AdminCreateLevelResponse);
+  rpc AdminUpdateLevel     (AdminUpdateLevelRequest)     returns (AdminUpdateLevelResponse);
+  rpc AdminDeleteLevel     (AdminDeleteLevelRequest)     returns (AdminDeleteLevelResponse);
+  rpc AdminGetAllLevels    (AdminGetAllLevelsRequest)    returns (AdminGetAllLevelsResponse);
+
+  rpc AdminCreateChallenge (AdminCreateChallengeRequest) returns (AdminCreateChallengeResponse);
+  rpc AdminUpdateChallenge (AdminUpdateChallengeRequest) returns (AdminUpdateChallengeResponse);
+  rpc AdminDeleteChallenge (AdminDeleteChallengeRequest) returns (AdminDeleteChallengeResponse);
+  rpc AdminGetChallengesByLevel (AdminGetChallengesByLevelRequest) returns (AdminGetChallengesByLevelResponse);
+
+  rpc AdminCreateHint      (AdminCreateHintRequest)      returns (AdminCreateHintResponse);
+  rpc AdminDeleteHint      (AdminDeleteHintRequest)      returns (AdminDeleteHintResponse);
+  rpc AdminGetHintsByChallenge (AdminGetHintsByChallengeRequest) returns (AdminGetHintsByChallengeResponse);
+
+  rpc AdminCreateTestCase (AdminCreateTestCaseRequest) returns (AdminCreateTestCaseResponse);
+  rpc AdminDeleteTestCase (AdminDeleteTestCaseRequest) returns (AdminDeleteTestCaseResponse);
+  rpc AdminGetTestCasesByChallenge (AdminGetTestCasesByChallengeRequest) returns (AdminGetTestCasesByChallengeResponse);
+}
+
+// ----- Level -----
+
+message GetLevelsRequest {
+  int32 auth_id = 1;  // để check unlock status
+}
+
+message LevelSummary {
+  int32  id          = 1;
+  string name        = 2;
+  string description = 3;
+  bool   is_unlocked = 4;
+  bool   is_completed = 5;
+  int32  challenge_count = 6;
+}
+
+message GetLevelsResponse {
+  repeated LevelSummary levels = 1;
+}
+
+message GetLevelDetailRequest {
+  int32 level_id = 1;
+  int32 auth_id  = 2;
+}
+
+message ChallengeItem {
+  int32  id          = 1;
+  string title       = 2;
+  string type        = 3;  // "variable" | "condition" | "loop"
+  bool   is_completed = 4;
+}
+
+message GetLevelDetailResponse {
+  int32  id          = 1;
+  string name        = 2;
+  string description = 3;
+  string story       = 4;  // lore của màn chơi
+  bool   is_unlocked = 5;
+  repeated ChallengeItem challenges = 6;
+}
+
+// ----- Challenge -----
+
+message GetChallengeRequest {
+  int32 challenge_id = 1;
+}
+
+message GetChallengeResponse {
+  int32  id          = 1;
+  int32  level_id    = 2;
+  string title       = 3;
+  string description = 4;
+  string type        = 5;   // "variable" | "condition" | "loop"
+  string starter_code = 6;  // code mẫu cho người chơi
+  int32  max_score   = 7;
+  int32  hint_count  = 8;
+}
+
+message GetHintRequest {
+  int32 challenge_id = 1;
+  int32 hint_index   = 2;  // 0-based, tăng dần theo lần gợi ý
+}
+
+message GetHintResponse {
+  string hint    = 1;
+  bool   is_last = 2;
+}
+
+message SubmitAnswerRequest {
+  int32  auth_id      = 1;
+  int32  challenge_id = 2;
+  string code         = 3;
+  string language     = 4;  // "python" | "javascript"
+}
+
+message SubmitAnswerResponse {
+  bool   passed          = 1;
+  int32  score           = 2;
+  string feedback        = 3;   // "Đúng rồi!" hoặc mô tả lỗi
+  int32  line_count      = 4;   // dùng để tính bonus Màn 3
+  int32  execution_ms    = 5;
+  repeated TestResult test_results = 6;
+}
+
+message TestResult {
+  string input    = 1;
+  string expected = 2;
+  string actual   = 3;
+  bool   passed   = 4;
+}
+
+// ----- Progress -----
+
+message GetProgressRequest {
+  int32 auth_id = 1;
+}
+
+message LevelProgress {
+  int32  level_id        = 1;
+  string level_name      = 2;
+  bool   is_completed    = 3;
+  int32  challenges_done = 4;
+  int32  challenges_total = 5;
+  int32  score           = 6;
+  int32  time_spent      = 7;  // seconds
+}
+
+message GetProgressResponse {
+  repeated LevelProgress levels     = 1;
+  int32                  total_score = 2;
+  int32                  levels_completed = 3;
+}
+
+message StartLevelRequest {
+  int32 auth_id  = 1;
+  int32 level_id = 2;
+}
+
+message StartLevelResponse {
+  bool   success    = 1;
+  string started_at = 2;  // ISO8601
+}
+
+message CompleteLevelRequest {
+  int32 auth_id    = 1;
+  int32 level_id   = 2;
+  int32 score      = 3;
+  int32 time_spent = 4;  // seconds
+  string level_name = 5;
+}
+
+message CompleteLevelResponse {
+  bool   success          = 1;
+  bool   next_level_unlocked = 2;
+  int32  next_level_id    = 3;
+}
+
+// ----- Code execution -----
+
+message RunCodeRequest {
+  string code     = 1;
+  string language = 2;   // "python" | "javascript"
+  string stdin    = 3;   // input nếu có
+}
+
+message RunCodeResponse {
+  string stdout   = 1;
+  string stderr   = 2;
+  int32  exit_code = 3;
+  int32  execution_ms = 4;
+  bool   timed_out = 5;
+}
+
+message ValidateCodeRequest {
+  int32  challenge_id = 1;
+  string code         = 2;
+  string language     = 3;
+}
+
+message ValidateCodeResponse {
+  bool   passed       = 1;
+  string feedback     = 2;
+  int32  score        = 3;
+  int32  line_count   = 4;
+  repeated TestResult test_results = 5;
+}
+
+// ----- Admin: Level -----
+message AdminCreateLevelRequest { string name = 1; string description = 2; string story = 3; int32 order = 4; }
+message AdminCreateLevelResponse { bool success = 1; int32 id = 2; }
+message AdminUpdateLevelRequest { int32 id = 1; string name = 2; string description = 3; string story = 4; int32 order = 5; bool is_active = 6; }
+message AdminUpdateLevelResponse { bool success = 1; }
+message AdminDeleteLevelRequest { int32 id = 1; }
+message AdminDeleteLevelResponse { bool success = 1; }
+message AdminGetAllLevelsRequest {}
+message AdminLevelItem {
+  int32 id = 1; string name = 2; string description = 3; string story = 4;
+  int32 order = 5; bool is_active = 6; int32 challenge_count = 7;
+}
+message AdminGetAllLevelsResponse { repeated AdminLevelItem levels = 1; }
+
+// ----- Admin: Challenge -----
+message AdminCreateChallengeRequest {
+  int32 level_id = 1; string title = 2; string description = 3;
+  string type = 4; string starter_code = 5; int32 max_score = 6; int32 order = 7;
+}
+message AdminCreateChallengeResponse { bool success = 1; int32 id = 2; }
+message AdminUpdateChallengeRequest {
+  int32 id = 1; string title = 2; string description = 3;
+  string type = 4; string starter_code = 5; int32 max_score = 6; int32 order = 7;
+}
+message AdminUpdateChallengeResponse { bool success = 1; }
+message AdminDeleteChallengeRequest { int32 id = 1; }
+message AdminDeleteChallengeResponse { bool success = 1; }
+message AdminGetChallengesByLevelRequest { int32 level_id = 1; }
+message AdminChallengeItem {
+  int32 id = 1; string title = 2; string type = 3; string description = 4;
+  string starter_code = 5; int32 max_score = 6; int32 order = 7; int32 hint_count = 8;
+}
+message AdminGetChallengesByLevelResponse { repeated AdminChallengeItem challenges = 1; }
+
+// ----- Admin: Hint -----
+message AdminCreateHintRequest { int32 challenge_id = 1; string content = 2; int32 index = 3; }
+message AdminCreateHintResponse { bool success = 1; int32 id = 2; }
+message AdminDeleteHintRequest { int32 id = 1; }
+message AdminDeleteHintResponse { bool success = 1; }
+message AdminGetHintsByChallengeRequest { int32 challenge_id = 1; }
+message AdminHintItem { int32 id = 1; string content = 2; int32 index = 3; }
+message AdminGetHintsByChallengeResponse { repeated AdminHintItem hints = 1; }
+
+// ----- Admin: Test Case -----
+message AdminCreateTestCaseRequest { int32 challenge_id = 1; string input = 2; string expected_output = 3; int32 order = 4; }
+message AdminCreateTestCaseResponse { bool success = 1; int32 id = 2; }
+message AdminDeleteTestCaseRequest { int32 id = 1; }
+message AdminDeleteTestCaseResponse { bool success = 1; }
+message AdminGetTestCasesByChallengeRequest { int32 challenge_id = 1; }
+message AdminTestCaseItem { int32 id = 1; string input = 2; string expected_output = 3; int32 order = 4; }
+message AdminGetTestCasesByChallengeResponse { repeated AdminTestCaseItem test_cases = 1; }
