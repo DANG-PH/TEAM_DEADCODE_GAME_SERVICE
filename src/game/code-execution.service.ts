@@ -4,8 +4,7 @@ import { Repository } from 'typeorm';
 import { TestCase_Entity } from './test-case.entity';
 import type { RunCodeRequest, RunCodeResponse, ValidateCodeRequest, ValidateCodeResponse } from 'proto/game.pb';
 
-const JUDGE0_URL  = 'https://judge029.p.rapidapi.com';  // ← đổi URL
-const JUDGE0_HOST = 'judge029.p.rapidapi.com';           // ← đổi host
+const JUDGE0_URL = 'https://ce.judge0.com';
 
 const LANGUAGE_ID: Record<string, number> = {
   python:     71,  // Python 3.8.1
@@ -15,7 +14,6 @@ const LANGUAGE_ID: Record<string, number> = {
 @Injectable()
 export class CodeExecutionService {
   private readonly logger = new Logger(CodeExecutionService.name);
-  private readonly apiKey = process.env.JUDGE0_API_KEY ?? '';
 
   constructor(
     @InjectRepository(TestCase_Entity)
@@ -26,9 +24,7 @@ export class CodeExecutionService {
 
   private get headers() {
     return {
-      'Content-Type':    'application/json',
-      'X-RapidAPI-Key':  this.apiKey,
-      'X-RapidAPI-Host': JUDGE0_HOST,
+      'Content-Type': 'application/json',
     };
   }
 
